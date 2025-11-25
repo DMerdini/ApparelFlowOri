@@ -3,8 +3,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { collection, onSnapshot, query, where, getDocs } from 'firebase/firestore';
 import type { Good } from '@/types';
-import { columns } from '../inventory/components/columns';
-import { DataTable } from './data-table'; // Use the new local DataTable
+import { getColumns } from '../inventory/components/columns';
+import { DataTable } from './data-table';
 import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import {
     Select,
@@ -32,7 +32,7 @@ export default function ExportPage() {
     const db = useFirestore();
     const { toast } = useToast();
 
-    const exportableColumns = useMemo(() => columns.filter(c => c.id !== 'actions'), []);
+    const exportableColumns = useMemo(() => getColumns([], []).filter(c => c.id !== 'actions'), []);
 
 
     useEffect(() => {

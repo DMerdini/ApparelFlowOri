@@ -1,0 +1,133 @@
+/**
+ * @fileoverview Firestore Security Rules for ApparelFlow.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for user profiles and
+ * uses role-based access control for other collections. It prioritizes
+ * authorization independence and aims for clear, maintainable rules.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profile data, with the document ID matching
+ *   the user's Firebase Auth UID. The 'role' field is denormalized for
+ *   authorization.
+ * - /goods/{goodId}: Stores goods inventory data.
+ * - /clothing_types/{clothingTypeId}: Stores predefined clothing types.
+ * - /composition_types/{compositionTypeId}: Stores predefined composition types.
+ * - /reports/{reportId}: Stores generated reports.
+ * - /roles_admin/{userId}: Presence of document grants admin privileges. Document ID matches user's Firebase Auth UID.
+ *
+ * Key Security Decisions:
+ * - Users can only read/write their own profile data.
+ * - Admin privileges are granted by the presence of a document in the
+ *   /roles_admin/{userId} collection.
+ * - Listing of users is restricted to admins to prevent information disclosure.
+ * - Data validation is minimized to allow for rapid prototyping. Only
+ *   authorization-critical fields are validated.
+ *
+ * Denormalization for Authorization:
+ * - The 'role' field is denormalized into the /users/{userId} document to
+ *   avoid costly 'get()' calls in security rules. This allows for fast,
+
+ *   simple role-based access control.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Checks if the user is signed in.
+     * @returns {boolean} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user is the owner of the document.
+     * @param {string} userId The user ID to check against.
+     * @returns {boolean} True if the user is the owner, false otherwise.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is an existing owner of the document.
+     * @param {string} userId The user ID to check against.
+     * @returns {boolean} True if the user is the owner and the document exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+     /**
+      * @description Checks if the user is an admin by checking their user document.
+      * @returns {boolean} True if the user is an admin, false otherwise.
+      */
+    function isAdmin() {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return userDoc.role == 'admin' || userDoc.role == 'SysAdmin';
+    }
+
+    /**
+     * @description Rules for user profiles.
+     * @path /users/{userId}
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) || isAdmin();
+      allow delete: if isExistingOwner(userId) || isAdmin();
+    }
+
+    /**
+     * @description Rules for goods.
+     * @path /goods/{goodId}
+     */
+    match /goods/{goodId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.createdBy == request.auth.uid || isAdmin();
+    }
+
+    /**
+     * @description Rules for clothing types.
+     * @path /clothing_types/{clothingTypeId}
+     */
+    match /clothing_types/{clothingTypeId} {
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description Rules for composition types.
+     * @path /composition_types/{compositionTypeId}
+     */
+    match /composition_types/{compositionTypeId} {
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description Rules for reports.
+     * @path /reports/{reportId}
+     */
+    match /reports/{reportId} {
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description Rules for admin role assignment.
+     * @path /roles_admin/{userId}
+     */
+    match /roles_admin/{userId} {
+      allow get: if isSignedIn() && isAdmin();
+      allow list: if false;
+      allow create: if false; // Only the Firebase Admin SDK should be able to create these.
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

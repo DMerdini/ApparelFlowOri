@@ -1,0 +1,339 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user within the ApparelFlow application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User's display name."
+        },
+        "role": {
+          "type": "string",
+          "description": "User's role (e.g., admin, verified user, pending approval)."
+        },
+        "approvalStatus": {
+          "type": "string",
+          "description": "The approval status of the user, such as pending or approved."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "displayName",
+        "role"
+      ]
+    },
+    "Good": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Good",
+      "type": "object",
+      "description": "Represents a good in the inventory.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the good."
+        },
+        "model": {
+          "type": "string",
+          "description": "Model of the good."
+        },
+        "invoiceNumber": {
+          "type": "string",
+          "description": "Invoice number for the good."
+        },
+        "invoiceDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date of the invoice."
+        },
+        "comp": {
+          "type": "string",
+          "description": "Reference to a composition type."
+        },
+        "origin": {
+          "type": "string",
+          "enum": ["CEE", "EXTRA"],
+          "description": "Origin of the good."
+        },
+        "gender": {
+          "type": "string",
+          "enum": ["male", "female"],
+          "description": "Target gender for the good."
+        },
+        "type": {
+          "type": "string",
+          "description": "Reference to a clothing type."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity of the good."
+        },
+        "area": {
+          "type": "number",
+          "description": "Area of the good."
+        },
+        "value": {
+          "type": "number",
+          "description": "Value of the good."
+        },
+        "accessoriesValue": {
+          "type": "number",
+          "description": "Value of the accessories for the good."
+        },
+        "weight": {
+          "type": "number",
+          "description": "Weight of the good."
+        },
+        "accessoriesWeight": {
+          "type": "number",
+          "description": "Weight of the accessories for the good."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the good was created."
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "UID of the user who created the good."
+        },
+        "totalValue": {
+          "type": "number",
+          "description": "Total value of the good (value + accessoriesValue)."
+        },
+        "totalWeight": {
+          "type": "number",
+          "description": "Total weight of the good (weight + accessoriesWeight)."
+        }
+      },
+      "required": [
+        "id",
+        "model",
+        "invoiceNumber",
+        "invoiceDate",
+        "comp",
+        "origin",
+        "gender",
+        "type",
+        "quantity",
+        "area",
+        "value",
+        "accessoriesValue",
+        "weight",
+        "accessoriesWeight",
+        "createdAt",
+        "createdBy",
+        "totalValue",
+        "totalWeight"
+      ]
+    },
+    "ClothingType": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ClothingType",
+      "type": "object",
+      "description": "Represents a predefined clothing type (e.g., shirt, pants, dress).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the clothing type."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the clothing type."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the clothing type."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ]
+    },
+    "CompositionType": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CompositionType",
+      "type": "object",
+      "description": "Represents a predefined composition type (e.g., cotton, polyester, silk).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the composition type."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the composition type."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the composition type."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description"
+      ]
+    },
+    "Report": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Report",
+      "type": "object",
+      "description": "Represents a generated report based on inventory data.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the report."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Start date for the report's data range.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "End date for the report's data range.",
+          "format": "date-time"
+        },
+        "generatedDate": {
+          "type": "string",
+          "description": "Date the report was generated.",
+          "format": "date-time"
+        },
+        "reportData": {
+          "type": "string",
+          "description": "The data contained within the report, likely in CSV or JSON format."
+        }
+      },
+      "required": [
+        "id",
+        "startDate",
+        "endDate",
+        "generatedDate",
+        "reportData"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile data. The 'role' field is denormalized for authorization independence. The document ID is equal to the user's Firebase Auth UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, matching their Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/goods/{goodId}",
+        "definition": {
+          "entityName": "Good",
+          "schema": {
+            "$ref": "#/backend/entities/Good"
+          },
+          "description": "Stores goods inventory data.",
+          "params": [
+            {
+              "name": "goodId",
+              "description": "The unique identifier for the good."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clothing_types/{clothingTypeId}",
+        "definition": {
+          "entityName": "ClothingType",
+          "schema": {
+            "$ref": "#/backend/entities/ClothingType"
+          },
+          "description": "Stores predefined clothing types.",
+          "params": [
+            {
+              "name": "clothingTypeId",
+              "description": "The unique identifier for the clothing type."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/composition_types/{compositionTypeId}",
+        "definition": {
+          "entityName": "CompositionType",
+          "schema": {
+            "$ref": "#/backend/entities/CompositionType"
+          },
+          "description": "Stores predefined composition types.",
+          "params": [
+            {
+              "name": "compositionTypeId",
+              "description": "The unique identifier for the composition type."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/reports/{reportId}",
+        "definition": {
+          "entityName": "Report",
+          "schema": {
+            "$ref": "#/backend/entities/Report"
+          },
+          "description": "Stores generated reports.",
+          "params": [
+            {
+              "name": "reportId",
+              "description": "The unique identifier for the report."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Documents in this collection denote administrator privileges. The existence of a document is sufficient. This supports secure admin role assignment. The document ID is the user's Firebase Auth UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, matching their Firebase Auth UID."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to address the application's requirements for user authentication, role-based access control, inventory management, and reporting, while adhering to the principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs. The structure utilizes path-based ownership for user-related data and membership maps for collaborative data access.  Crucially, denormalization is employed to ensure authorization independence and efficient security rule evaluation.\n\n**Authorization Independence:**\n\n*   User Roles: The `users/{userId}` document includes the `role` field. This denormalizes the role information directly into the user document. This is particularly important because the role dictates what parts of the app are visible and what CRUD operations are possible.\n\n*   Goods Access: The `goods` collection includes a `createdBy` field for access control, ensuring users can only manage their own inventory items.\n\n**QAPs (Rules are not Filters):**\n\n*   User Roles: Storing roles directly in the user document enables secure `list` operations on user data, ensuring that only authorized users can access specific user documents based on their roles (e.g., admins listing all users, users only accessing their own data).\n*   Goods: Because goods are owned by users, queries must be scoped to the `createdBy` field to be compliant with security rules.\n\n**Structure Overview:**\n\n*   `/users/{userId}`: Stores user profiles.  Includes `email`, `displayName`, and `role`. Crucially, the `userId` from Authentication is the document ID. The `role` field is denormalized to avoid `get()` calls in security rules, and the `approvalStatus` is used for the admin approval workflow.\n*   `/goods/{goodId}`: Stores information about each inventory good.\n*   `/clothing_types/{clothingTypeId}`: Stores predefined clothing types.\n*   `/composition_types/{compositionTypeId}`: Stores predefined composition types.\n*   `/reports/{reportId}`: Stores generated reports. Consider adding a `userId` field if reports are user-specific; otherwise, limit access based on user roles.\n*   `/roles_admin/{userId}`:  Documents in this collection denote administrator privileges. The *existence* of a document is sufficient. This supports secure admin role assignment.\n\nThis structure facilitates clear and maintainable security rules, supports atomic operations, and ensures the integrity of the data."
+  }
+}
+    

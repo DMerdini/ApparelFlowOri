@@ -1,13 +1,18 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import { Good } from '@/types';
+import { Good, ClothingType, CompositionType } from '@/types';
 import { DataTableRowActions } from './data-table-row-actions';
 import { DataTableColumnHeader } from './data-table-column-header';
 import { format } from 'date-fns';
 import { Checkbox } from '@/components/ui/checkbox';
 
-export const columns: ColumnDef<Good>[] = [
+
+// We need to extend the column definition to include our custom props
+export const getColumns = (
+    clothingTypes: ClothingType[], 
+    compositionTypes: CompositionType[]
+): ColumnDef<Good>[] => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -86,6 +91,12 @@ export const columns: ColumnDef<Good>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row }) => (
+        <DataTableRowActions 
+            row={row} 
+            clothingTypes={clothingTypes}
+            compositionTypes={compositionTypes}
+        />
+    ),
   },
 ];

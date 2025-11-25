@@ -11,6 +11,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuPortal,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
@@ -20,12 +21,12 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import { MoreHorizontal, Check, Shield, User as UserIcon, X, AlertTriangle } from 'lucide-react';
-import { doc, updateDoc } from 'firebase/firestore';
+import { MoreHorizontal, Check, Shield, User as UserIcon, X, AlertTriangle, Trash2 } from 'lucide-react';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { User, UserRole, UserStatus } from '@/types';
-import { useFirestore } from '@/firebase';
-import { useEffect, useState, useMemo } from 'react';
+import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
+import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 
 interface DataTableRowActionsProps<TData> {
@@ -40,14 +41,18 @@ export function DataTableRowActions<TData>({
   const db = useFirestore();
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<UserStatus | null>(null);
   const [confirmationCode, setConfirmationCode] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [error, setError] = useState('');
 
-  const generateCode = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+  const generateCode = (length: number = 6) => {
+    if (length === 6) {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+    return Math.floor(1000 + Math.random() * 9000).toString();
   };
 
   const openConfirmation = (role: UserRole) => {
@@ -67,6 +72,13 @@ export function DataTableRowActions<TData>({
     setError('');
     setConfirmationCode('');
   }
+  
+  const openDeleteConfirmation = () => {
+    setVerificationCode(generateCode(4));
+    setIsDeleteDialogOpen(true);
+    setError('');
+    setConfirmationCode('');
+  };
 
   const handleConfirm = async () => {
     if (confirmationCode !== verificationCode) {
@@ -99,6 +111,27 @@ export function DataTableRowActions<TData>({
     }
   }
 
+  const handleDelete = async () => {
+     if (confirmationCode !== verificationCode) {
+      setError('Invalid code. Please try again.');
+      return;
+    }
+    setError('');
+
+    if (!db) return;
+    const docRef = doc(db, 'users', user.uid);
+    deleteDoc(docRef).then(() => {
+        toast({ title: 'Success', description: 'User deleted successfully from database.' });
+        setIsDeleteDialogOpen(false);
+    }).catch(error => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        }));
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not delete user.' });
+    });
+  }
+
 
   return (
     <>
@@ -114,9 +147,12 @@ export function DataTableRowActions<TData>({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[160px]">
         {user.role === 'pending' && (
+          <>
           <DropdownMenuItem onClick={handleApproveUser}>
             <Check className="mr-2 h-4 w-4" /> Approve User
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          </>
         )}
         <DropdownMenuSub>
             <DropdownMenuSubTrigger>Change Role</DropdownMenuSubTrigger>
@@ -153,6 +189,11 @@ export function DataTableRowActions<TData>({
                 </DropdownMenuSubContent>
             </DropdownMenuPortal>
         </DropdownMenuSub>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={openDeleteConfirmation} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete User
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
 
@@ -178,7 +219,34 @@ export function DataTableRowActions<TData>({
             {error && <p className="text-destructive text-sm text-center">{error}</p>}
             <DialogFooter>
                 <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>Cancel</Button>
-                <Button onClick={handleConfirm}>Confirm</Button>
+                <Button onClick={handleConfirm} disabled={confirmationCode.length < 6}>Confirm</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Confirm User Deletion</DialogTitle>
+                <DialogDescription>
+                    This will permanently delete the user from the database. This action cannot be undone. Enter the following code to confirm.
+                    <div className="my-4 text-center">
+                        <p className="text-2xl font-bold tracking-widest text-destructive bg-destructive/10 rounded-md p-2">
+                           {verificationCode}
+                        </p>
+                   </div>
+                </DialogDescription>
+            </DialogHeader>
+            <Input 
+                value={confirmationCode}
+                onChange={(e) => setConfirmationCode(e.target.value)}
+                placeholder="Enter 4-digit code"
+                maxLength={4}
+            />
+            {error && <p className="text-destructive text-sm text-center">{error}</p>}
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleDelete} disabled={confirmationCode.length < 4}>Delete User</Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>

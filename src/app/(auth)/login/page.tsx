@@ -26,15 +26,18 @@ import { useAuth } from '@/context/auth-provider';
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
+  pin: z.string().length(6, { message: 'PIN must be 6 digits.' }).optional(),
 });
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+  const [generatedPin, setGeneratedPin] = useState('');
   const auth = useFirebaseAuth();
   const { user, loading: authLoading } = useAuth();
-
+  
   useEffect(() => {
     if (!authLoading && user) {
       router.replace('/dashboard');
@@ -47,7 +50,30 @@ export default function LoginPage() {
       email: '',
       password: '',
     },
+    mode: 'onChange',
   });
+  
+  const { formState, trigger, watch } = form;
+  const enteredPin = watch('pin');
+
+  useEffect(() => {
+    const subscription = watch(async (value, { name, type }) => {
+      if (name === 'email' || name === 'password') {
+        const isFormValid = await trigger(['email', 'password']);
+        if (isFormValid && !showPin) {
+          const newPin = Math.floor(100000 + Math.random() * 900000).toString();
+          setGeneratedPin(newPin);
+          setShowPin(true);
+        } else if (!isFormValid && showPin) {
+          setShowPin(false);
+          setGeneratedPin('');
+          form.resetField('pin');
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, trigger, showPin, form]);
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -64,12 +90,14 @@ export default function LoginPage() {
         title: 'Sign In Failed',
         description: errorMessage,
       });
+      setShowPin(false);
+      setGeneratedPin('');
+      form.reset();
     } finally {
         setIsLoading(false);
     }
   }
 
-  // Show a loader while the initial auth state is being determined.
   if (authLoading || user) {
       return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -77,6 +105,9 @@ export default function LoginPage() {
         </div>
       );
   }
+  
+  const isPinValid = enteredPin === generatedPin;
+  const canSubmit = formState.isValid && showPin && isPinValid;
 
   return (
     <Card className="w-full max-w-md shadow-2xl">
@@ -117,7 +148,30 @@ export default function LoginPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            {showPin && (
+               <div className="space-y-2 text-center">
+                  <p className="text-sm text-muted-foreground">Enter the code below to continue</p>
+                  <div className="my-4 text-center">
+                        <p className="text-2xl font-bold tracking-widest text-primary bg-primary/10 rounded-md p-2">
+                           {generatedPin}
+                        </p>
+                   </div>
+                  <FormField
+                    control={form.control}
+                    name="pin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirmation Code</FormLabel>
+                        <FormControl>
+                          <Input placeholder="6-digit code" {...field} maxLength={6} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+               </div>
+            )}
+            <Button type="submit" className="w-full" disabled={isLoading || !canSubmit}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign In
             </Button>

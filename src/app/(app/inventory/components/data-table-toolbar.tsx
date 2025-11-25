@@ -37,10 +37,10 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useEffect, useState } from 'react';
-import { addDoc, collection, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { useState } from 'react';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { ClothingType, CompositionType, Good } from '@/types';
+import { ClothingType, CompositionType } from '@/types';
 import { useFirestore, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useAuth } from '@/context/auth-provider';
 import { cn } from '@/lib/utils';
@@ -49,6 +49,8 @@ import { format } from "date-fns"
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
   isInventoryPage?: boolean;
+  clothingTypes: ClothingType[];
+  compositionTypes: CompositionType[];
 }
 
 const goodSchema = z.object({
@@ -68,26 +70,18 @@ const goodSchema = z.object({
 });
 
 
-function AddItemForm({ setOpen }: { setOpen: (open: boolean) => void }) {
+function AddItemForm({
+  setOpen,
+  clothingTypes,
+  compositionTypes,
+}: {
+  setOpen: (open: boolean) => void;
+  clothingTypes: ClothingType[];
+  compositionTypes: CompositionType[];
+}) {
   const { toast } = useToast();
   const db = useFirestore();
   const { user } = useAuth();
-  const [clothingTypes, setClothingTypes] = useState<ClothingType[]>([]);
-  const [compositionTypes, setCompositionTypes] = useState<CompositionType[]>([]);
-
-  useEffect(() => {
-    if (!db) return;
-    const unsubClothing = onSnapshot(collection(db, 'clothing_types'), (snapshot) => {
-      setClothingTypes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ClothingType)));
-    });
-    const unsubComposition = onSnapshot(collection(db, 'composition_types'), (snapshot) => {
-      setCompositionTypes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CompositionType)));
-    });
-    return () => {
-      unsubClothing();
-      unsubComposition();
-    };
-  }, [db]);
 
   const form = useForm<z.infer<typeof goodSchema>>({
     resolver: zodResolver(goodSchema),
@@ -126,7 +120,6 @@ function AddItemForm({ setOpen }: { setOpen: (open: boolean) => void }) {
         setOpen(false);
       })
       .catch((error) => {
-        // Emit the detailed error for debugging.
         errorEmitter.emit(
           'permission-error',
           new FirestorePermissionError({
@@ -135,7 +128,6 @@ function AddItemForm({ setOpen }: { setOpen: (open: boolean) => void }) {
             requestResourceData: newGoodData,
           })
         );
-        // Show a user-friendly message.
         toast({
           variant: 'destructive',
           title: 'Error',
@@ -332,14 +324,22 @@ function AddItemForm({ setOpen }: { setOpen: (open: boolean) => void }) {
 export function DataTableToolbar<TData>({
   table,
   isInventoryPage,
+  clothingTypes,
+  compositionTypes,
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
   const [open, setOpen] = useState(false);
 
   return (
     <div className="flex items-center justify-between">
-      <div className="flex-1 items-center space-x-2">
-        {isInventoryPage ? (
+       <div className="space-y-1">
+        <h2 className="text-2xl font-bold tracking-tight">Inventory</h2>
+        <p className="text-sm text-muted-foreground">
+          Here&apos;s a list of all items in your inventory.
+        </p>
+      </div>
+      <div className="flex items-center space-x-2">
+        {isInventoryPage && (
           <>
             <Input
               placeholder="Filter by invoice..."
@@ -347,24 +347,17 @@ export function DataTableToolbar<TData>({
               onChange={(event) =>
                 table.getColumn('invoiceNumber')?.setFilterValue(event.target.value)
               }
-              className="h-10 w-[150px] lg:w-[250px]"
+              className="h-10 w-[150px] lg:w-[200px]"
             />
-            <Input
+             <Input
               placeholder="Filter by model..."
               value={(table.getColumn('model')?.getFilterValue() as string) ?? ''}
               onChange={(event) =>
                 table.getColumn('model')?.setFilterValue(event.target.value)
               }
-              className="h-10 w-[150px] lg:w-[250px]"
+              className="h-10 w-[150px] lg:w-[200px]"
             />
           </>
-        ) : (
-           <div className="space-y-1">
-                <h2 className="text-2xl font-bold tracking-tight">Inventory</h2>
-                <p className="text-sm text-muted-foreground">
-                Here&apos;s a list of all items in your inventory.
-                </p>
-            </div>
         )}
         {isFiltered && (
           <Button
@@ -376,9 +369,6 @@ export function DataTableToolbar<TData>({
             <X className="ml-2 h-4 w-4" />
           </Button>
         )}
-      </div>
-      
-      <div className="flex items-center space-x-2">
         {isInventoryPage && (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -394,7 +384,11 @@ export function DataTableToolbar<TData>({
                 Fill in the details below to add a new item to the inventory.
               </DialogDescription>
             </DialogHeader>
-            <AddItemForm setOpen={setOpen} />
+            <AddItemForm
+              setOpen={setOpen}
+              clothingTypes={clothingTypes}
+              compositionTypes={compositionTypes}
+            />
           </DialogContent>
         </Dialog>
         )}

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,12 +27,15 @@ const formSchema = z.object({
   displayName: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  pin: z.string().length(6, { message: 'PIN must be 6 digits.' }).optional(),
 });
 
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+  const [generatedPin, setGeneratedPin] = useState('');
   const auth = useAuth();
   const db = useFirestore();
 
@@ -43,7 +46,30 @@ export default function SignupPage() {
       email: '',
       password: '',
     },
+    mode: 'onChange',
   });
+
+  const { formState, trigger, watch } = form;
+  const enteredPin = watch('pin');
+
+  useEffect(() => {
+    const subscription = watch(async (value, { name, type }) => {
+      if (name === 'displayName' || name === 'email' || name === 'password') {
+        const isFormValid = await trigger(['displayName', 'email', 'password']);
+        if (isFormValid && !showPin) {
+          const newPin = Math.floor(100000 + Math.random() * 900000).toString();
+          setGeneratedPin(newPin);
+          setShowPin(true);
+        } else if (!isFormValid && showPin) {
+          setShowPin(false);
+          setGeneratedPin('');
+          form.resetField('pin');
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, trigger, showPin, form]);
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -55,7 +81,7 @@ export default function SignupPage() {
 
       const userDocRef = doc(db, 'users', user.uid);
       const userData = {
-        uid: user.uid, // Add uid to match the User type
+        uid: user.uid,
         displayName: values.displayName,
         email: values.email,
         role: 'pending',
@@ -71,7 +97,6 @@ export default function SignupPage() {
         description: "Your account is created and waiting for admin approval.",
       });
 
-      // Redirecting to login will allow AuthProvider to handle the new user state cleanly
       router.push('/login');
     } catch (error: any) {
       toast({
@@ -79,10 +104,16 @@ export default function SignupPage() {
         title: 'Sign Up Failed',
         description: error.message || 'An unknown error occurred. Please try again.',
       });
+      setShowPin(false);
+      setGeneratedPin('');
+      form.reset();
     } finally {
       setIsLoading(false);
     }
   }
+
+  const isPinValid = enteredPin === generatedPin;
+  const canSubmit = formState.isValid && showPin && isPinValid;
 
   return (
     <Card className="w-full max-w-md shadow-2xl">
@@ -136,7 +167,30 @@ export default function SignupPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            {showPin && (
+               <div className="space-y-2 text-center">
+                  <p className="text-sm text-muted-foreground">Enter the code below to continue</p>
+                  <div className="my-4 text-center">
+                        <p className="text-2xl font-bold tracking-widest text-primary bg-primary/10 rounded-md p-2">
+                           {generatedPin}
+                        </p>
+                   </div>
+                  <FormField
+                    control={form.control}
+                    name="pin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirmation Code</FormLabel>
+                        <FormControl>
+                          <Input placeholder="6-digit code" {...field} maxLength={6} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+               </div>
+            )}
+            <Button type="submit" className="w-full" disabled={isLoading || !canSubmit}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign Up
             </Button>

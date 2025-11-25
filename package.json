@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 9002",
+    "dev": "next dev",
     "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.10.0",
+    "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-avatar": "^1.1.0",
@@ -38,7 +38,7 @@
     "date-fns": "^3.6.0",
     "dotenv": "^16.4.5",
     "embla-carousel-react": "^8.1.7",
-    "firebase": "^10.12.2",
+    "firebase": "^10.12.4",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
     "lucide-react": "^0.417.0",
@@ -58,8 +58,8 @@
     "@types/node": "^20.14.12",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "postcss": "^8.4.39",
-    "tailwindcss": "^3.4.6",
+    "postcss": "^8.4.40",
+    "tailwindcss": "^3.4.7",
     "typescript": "^5.5.4"
   }
 }

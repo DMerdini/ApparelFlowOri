@@ -43,8 +43,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (doc.exists()) {
             setUser({ uid: firebaseUser.uid, ...doc.data() } as AppUser);
           } else {
-            // This case can happen briefly after sign up before the user doc is created.
-            // We don't set user to null here, we wait for the doc to appear.
+            // This can happen for a new user, or if the doc is missing.
+            // Create a minimal user object to allow the app to function.
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              role: 'pending', // Default to pending if no doc exists
+              status: 'active',
+              createdAt: new Date(),
+            });
           }
           setLoading(false);
         },

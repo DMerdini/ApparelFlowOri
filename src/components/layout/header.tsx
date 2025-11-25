@@ -144,7 +144,7 @@ export function Header() {
             <Button variant="secondary" size="icon" className="rounded-full">
               <Avatar className="h-8 w-8">
                 <AvatarImage
-                  src={user?.photoURL || ''}
+                  //src={user?.photoURL || ''}
                   alt={user?.displayName || 'User'}
                 />
                 <AvatarFallback>

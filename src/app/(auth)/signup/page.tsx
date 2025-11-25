@@ -22,7 +22,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Package } from 'lucide-react';
 import { useAuth, useFirestore } from '@/firebase';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const formSchema = z.object({
   displayName: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -65,8 +64,7 @@ export default function SignupPage() {
         id: user.uid,
       };
 
-      // Use a non-blocking write to prevent permission errors from race conditions
-      setDocumentNonBlocking(userDocRef, userData, { merge: false });
+      await setDoc(userDocRef, userData);
       
       toast({
         title: "Registration Successful",

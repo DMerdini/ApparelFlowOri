@@ -26,7 +26,7 @@ export function setDocumentNonBlocking(
       "permission-error",
       new FirestorePermissionError({
         path: docRef.path,
-        operation: "merge" in options && options.merge ? "update" : "create",
+        operation: "merge" in options ? "update" : "create",
         requestResourceData: data,
       })
     );
@@ -78,7 +78,7 @@ export function updateDocumentNonBlocking(
  * Does NOT await the write operation internally.
  */
 export function deleteDocumentNonBlocking(docRef: DocumentReference) {
-  deleteDoc(docref).catch((error) => {
+  deleteDoc(docRef).catch((error) => {
     errorEmitter.emit(
       "permission-error",
       new FirestorePermissionError({
